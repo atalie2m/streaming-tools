@@ -18,6 +18,7 @@ file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html
 | --- | --- | --- |
 | `tz` | `Asia/Tokyo` | IANAタイムゾーン。例: `Asia/Tokyo`, `America/Los_Angeles`。 |
 | `seconds` | `1` | `seconds=0` にすると秒表示を非表示にします。 |
+| `margin` | `1.2` | プレート外側の余白をパーセントで指定します。`margin=0` にするとプレートが枠いっぱいになります。 |
 | `panel` |  | プレートの色を16進カラーで上書きします。`#` は付けても省略しても構いません。 |
 | `light` |  | プレートのハイライト色を上書きします。 |
 | `shadow` |  | プレート下部の影色を上書きします。 |
@@ -30,6 +31,7 @@ file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html
 
 ```text
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?seconds=0
+file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?margin=0
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?panel=f1dfc4&light=fff2db&shadow=d2ad7a
 ```
 

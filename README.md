@@ -20,6 +20,7 @@ file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html
 | --- | --- | --- |
 | `tz` | `Asia/Tokyo` | IANA time zone. Example: `Asia/Tokyo`, `America/Los_Angeles`. |
 | `seconds` | `1` | Set `seconds=0` to hide the seconds. |
+| `margin` | `1.2` | Outer plate margin as a percentage. Use `margin=0` to make the plate fill the source bounds. |
 | `panel` |  | Override the plate color with a hex color, with or without `#`. |
 | `light` |  | Override the plate highlight color. |
 | `shadow` |  | Override the lower plate shadow color. |
@@ -32,6 +33,7 @@ file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html
 
 ```text
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?seconds=0
+file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?margin=0
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?panel=f1dfc4&light=fff2db&shadow=d2ad7a
 ```
 

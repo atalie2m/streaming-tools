@@ -15,6 +15,7 @@
         --sunday-ink: #b83a36;
         --holiday-ink: #b83a36;
         --card-radius: 84px;
+        --widget-scale: 0.976;
       }
 
       * {
@@ -41,16 +42,20 @@
 
       .widget {
         position: relative;
-        width: min(92vw, calc(92vh * 1.58), 860px);
-        aspect-ratio: 1.58;
+        width: 100vw;
+        height: 100vh;
       }
 
       .clock-card {
         position: absolute;
-        inset: 3.5% 4.5% 5% 4.5%;
+        top: 50%;
+        left: 50%;
+        width: max(100vw, 158vh);
+        height: max(100vh, 63.3vw);
+        transform: translate(-50%, -50%) scale(var(--widget-scale));
         display: grid;
         place-items: center;
-        padding: clamp(16px, 4vw, 48px);
+        padding: clamp(12px, min(3.4vw, 5vh), 40px);
         border-radius: var(--card-radius);
         background:
           radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.42), transparent 28%),
@@ -69,29 +74,29 @@
         align-items: flex-end;
         justify-content: center;
         width: 100%;
-        line-height: 0.86;
+        line-height: 0.82;
         font-variant-numeric: tabular-nums;
       }
 
       .hour-minute {
-        font-size: clamp(46px, 15.2vw, 150px);
+        font-size: clamp(66px, min(22vw, 36vh), 205px);
         font-weight: 850;
         letter-spacing: 0;
         white-space: nowrap;
-        transform: translateX(clamp(6px, 1.1vw, 12px));
+        transform: translateX(clamp(2px, 0.6vw, 8px));
       }
 
       .seconds {
         margin-left: clamp(3px, 0.65vw, 8px);
-        font-size: clamp(22px, 6vw, 62px);
+        font-size: clamp(33px, min(11vw, 18vh), 102px);
         font-weight: 820;
         line-height: 1;
         white-space: nowrap;
       }
 
       .date {
-        margin-top: clamp(22px, 3vw, 36px);
-        font-size: clamp(28px, 8.2vw, 78px);
+        margin-top: clamp(8px, min(2.2vw, 3.4vh), 28px);
+        font-size: clamp(40px, min(12.5vw, 20vh), 112px);
         font-weight: 820;
         line-height: 1;
         letter-spacing: 0;
@@ -100,8 +105,8 @@
       }
 
       .weekday {
-        margin-top: clamp(14px, 2.2vw, 22px);
-        font-size: clamp(26px, 7vw, 68px);
+        margin-top: clamp(6px, min(1.6vw, 2.4vh), 18px);
+        font-size: clamp(36px, min(10.5vw, 16.5vh), 92px);
         font-weight: 820;
         line-height: 1;
         letter-spacing: 0;
@@ -130,9 +135,6 @@
           --card-radius: 48px;
         }
 
-        .clock-card {
-          inset: 3% 4% 4.5% 4%;
-        }
       }
     </style>
   </head>
@@ -173,6 +175,11 @@
           const color = value.startsWith("#") ? value : `#${value}`;
           root.style.setProperty(variable, color);
         }
+      }
+
+      const requestedMargin = Number(params.get("margin"));
+      if (Number.isFinite(requestedMargin) && requestedMargin >= 0 && requestedMargin <= 20) {
+        root.style.setProperty("--widget-scale", String(1 - (requestedMargin * 2) / 100));
       }
 
       const requestedTimeZone = params.get("tz") || "Asia/Tokyo";
