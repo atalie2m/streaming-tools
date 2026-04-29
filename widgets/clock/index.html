@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OBS 時計ウィジェット</title>
+    <style>
+      :root {
+        --panel: #ead7bd;
+        --panel-light: #f5ead7;
+        --panel-shadow: #cfae83;
+        --ink: #050505;
+        --weekday-ink: var(--ink);
+        --saturday-ink: #1f5faa;
+        --sunday-ink: #b83a36;
+        --holiday-ink: #b83a36;
+        --card-radius: 84px;
+        --widget-scale: 0.976;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: var(--ink);
+      }
+
+      .widget {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      .clock-card {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: max(100vw, 158vh);
+        height: max(100vh, 63.3vw);
+        transform: translate(-50%, -50%) scale(var(--widget-scale));
+        display: grid;
+        place-items: center;
+        padding: clamp(12px, min(3.4vw, 5vh), 40px);
+        border-radius: var(--card-radius);
+        background:
+          radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.42), transparent 28%),
+          linear-gradient(135deg, var(--panel-light) 0%, var(--panel) 45%, #dfc49f 100%);
+        box-shadow: inset 0 -10px 0 var(--panel-shadow);
+      }
+
+      .clock-face {
+        display: grid;
+        justify-items: center;
+        width: 100%;
+      }
+
+      .time-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        width: 100%;
+        line-height: 0.82;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .hour-minute {
+        font-size: clamp(66px, min(22vw, 36vh), 205px);
+        font-weight: 850;
+        letter-spacing: 0;
+        white-space: nowrap;
+        transform: translateX(clamp(2px, 0.6vw, 8px));
+      }
+
+      .seconds {
+        margin-left: clamp(3px, 0.65vw, 8px);
+        font-size: clamp(33px, min(11vw, 18vh), 102px);
+        font-weight: 820;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      .date {
+        margin-top: clamp(8px, min(2.2vw, 3.4vh), 28px);
+        font-size: clamp(40px, min(12.5vw, 20vh), 112px);
+        font-weight: 820;
+        line-height: 1;
+        letter-spacing: 0;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .weekday {
+        margin-top: clamp(6px, min(1.6vw, 2.4vh), 18px);
+        font-size: clamp(36px, min(10.5vw, 16.5vh), 92px);
+        font-weight: 820;
+        line-height: 1;
+        letter-spacing: 0;
+        white-space: nowrap;
+        color: var(--weekday-ink);
+      }
+
+      body[data-seconds="hidden"] .seconds {
+        display: none;
+      }
+
+      body[data-day="sat"] {
+        --weekday-ink: var(--saturday-ink);
+      }
+
+      body[data-day="sun"] {
+        --weekday-ink: var(--sunday-ink);
+      }
+
+      body[data-holiday="true"] {
+        --weekday-ink: var(--holiday-ink);
+      }
+
+      @media (max-width: 520px), (max-height: 330px) {
+        :root {
+          --card-radius: 48px;
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <main class="widget" aria-label="Clock widget">
+      <section class="clock-card">
+        <div class="clock-face">
+          <div class="time-row" aria-live="polite">
+            <span class="hour-minute" id="time">00:00</span>
+            <span class="seconds" id="seconds">:00</span>
+          </div>
+          <div class="date" id="date">0000-00-00</div>
+          <div class="weekday" id="weekday">(SUN)</div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const root = document.documentElement;
+      const body = document.body;
+
+      body.dataset.seconds = params.get("seconds") === "0" ? "hidden" : "shown";
+
+      const colorParams = {
+        panel: "--panel",
+        light: "--panel-light",
+        shadow: "--panel-shadow",
+        ink: "--ink",
+        saturday: "--saturday-ink",
+        sunday: "--sunday-ink",
+        holiday: "--holiday-ink"
+      };
+
+      for (const [param, variable] of Object.entries(colorParams)) {
+        const value = params.get(param);
+        if (value) {
+          const color = value.startsWith("#") ? value : `#${value}`;
+          root.style.setProperty(variable, color);
+        }
+      }
+
+      const requestedMargin = Number(params.get("margin"));
+      if (Number.isFinite(requestedMargin) && requestedMargin >= 0 && requestedMargin <= 20) {
+        root.style.setProperty("--widget-scale", String(1 - (requestedMargin * 2) / 100));
+      }
+
+      const requestedTimeZone = params.get("tz") || "Asia/Tokyo";
+      const requestedWeekdayStyle = params.get("weekday") || "short";
+      const weekdayStyle = ["long", "short", "narrow"].includes(requestedWeekdayStyle)
+        ? requestedWeekdayStyle
+        : "short";
+
+      function createFormatter(timeZone) {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          hour12: false,
+          hourCycle: "h23",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          weekday: weekdayStyle,
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        });
+      }
+
+      function createWeekdayKeyFormatter(timeZone) {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          weekday: "short"
+        });
+      }
+
+      let formatter;
+      let weekdayKeyFormatter;
+      try {
+        formatter = createFormatter(requestedTimeZone);
+        weekdayKeyFormatter = createWeekdayKeyFormatter(requestedTimeZone);
+      } catch {
+        formatter = createFormatter("Asia/Tokyo");
+        weekdayKeyFormatter = createWeekdayKeyFormatter("Asia/Tokyo");
+      }
+
+      const timeEl = document.getElementById("time");
+      const secondsEl = document.getElementById("seconds");
+      const dateEl = document.getElementById("date");
+      const weekdayEl = document.getElementById("weekday");
+
+      const officialHolidayOverrides = {
+        "2026-01-01": "元日",
+        "2026-01-12": "成人の日",
+        "2026-02-11": "建国記念の日",
+        "2026-02-23": "天皇誕生日",
+        "2026-03-20": "春分の日",
+        "2026-04-29": "昭和の日",
+        "2026-05-03": "憲法記念日",
+        "2026-05-04": "みどりの日",
+        "2026-05-05": "こどもの日",
+        "2026-05-06": "休日",
+        "2026-07-20": "海の日",
+        "2026-08-11": "山の日",
+        "2026-09-21": "敬老の日",
+        "2026-09-22": "休日",
+        "2026-09-23": "秋分の日",
+        "2026-10-12": "スポーツの日",
+        "2026-11-03": "文化の日",
+        "2026-11-23": "勤労感謝の日",
+        "2027-01-01": "元日",
+        "2027-01-11": "成人の日",
+        "2027-02-11": "建国記念の日",
+        "2027-02-23": "天皇誕生日",
+        "2027-03-21": "春分の日",
+        "2027-03-22": "休日",
+        "2027-04-29": "昭和の日",
+        "2027-05-03": "憲法記念日",
+        "2027-05-04": "みどりの日",
+        "2027-05-05": "こどもの日",
+        "2027-07-19": "海の日",
+        "2027-08-11": "山の日",
+        "2027-09-20": "敬老の日",
+        "2027-09-23": "秋分の日",
+        "2027-10-11": "スポーツの日",
+        "2027-11-03": "文化の日",
+        "2027-11-23": "勤労感謝の日"
+      };
+
+      function toDateKey(year, month, day) {
+        return [
+          String(year).padStart(4, "0"),
+          String(month).padStart(2, "0"),
+          String(day).padStart(2, "0")
+        ].join("-");
+      }
+
+      function getNthMonday(year, month, nth) {
+        const firstDay = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+        const firstMonday = 1 + ((8 - firstDay) % 7);
+        return firstMonday + (nth - 1) * 7;
+      }
+
+      function getVernalEquinoxDay(year) {
+        return Math.floor(20.8431 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+      }
+
+      function getAutumnalEquinoxDay(year) {
+        return Math.floor(23.2488 + 0.242194 * (year - 1980) - Math.floor((year - 1980) / 4));
+      }
+
+      function getBaseJapaneseHolidays(year) {
+        const holidays = new Map([
+          [toDateKey(year, 1, 1), "元日"],
+          [toDateKey(year, 1, getNthMonday(year, 1, 2)), "成人の日"],
+          [toDateKey(year, 2, 11), "建国記念の日"],
+          [toDateKey(year, 2, 23), "天皇誕生日"],
+          [toDateKey(year, 3, getVernalEquinoxDay(year)), "春分の日"],
+          [toDateKey(year, 4, 29), "昭和の日"],
+          [toDateKey(year, 5, 3), "憲法記念日"],
+          [toDateKey(year, 5, 4), "みどりの日"],
+          [toDateKey(year, 5, 5), "こどもの日"],
+          [toDateKey(year, 7, getNthMonday(year, 7, 3)), "海の日"],
+          [toDateKey(year, 8, 11), "山の日"],
+          [toDateKey(year, 9, getNthMonday(year, 9, 3)), "敬老の日"],
+          [toDateKey(year, 9, getAutumnalEquinoxDay(year)), "秋分の日"],
+          [toDateKey(year, 10, getNthMonday(year, 10, 2)), "スポーツの日"],
+          [toDateKey(year, 11, 3), "文化の日"],
+          [toDateKey(year, 11, 23), "勤労感謝の日"]
+        ]);
+        return holidays;
+      }
+
+      function buildJapaneseHolidays(year) {
+        const officialHolidays = Object.entries(officialHolidayOverrides)
+          .filter(([key]) => key.startsWith(`${year}-`));
+
+        if (officialHolidays.length > 0) {
+          return new Map(officialHolidays);
+        }
+
+        const holidays = getBaseJapaneseHolidays(year);
+
+        for (const key of [...holidays.keys()].sort()) {
+          const [holidayYear, holidayMonth, holidayDay] = key.split("-").map(Number);
+          const date = new Date(Date.UTC(holidayYear, holidayMonth - 1, holidayDay));
+          if (date.getUTCDay() !== 0) {
+            continue;
+          }
+
+          do {
+            date.setUTCDate(date.getUTCDate() + 1);
+          } while (holidays.has(toDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())));
+
+          if (date.getUTCFullYear() === year) {
+            holidays.set(toDateKey(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()), "休日");
+          }
+        }
+
+        for (let month = 1; month <= 12; month += 1) {
+          const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+          for (let day = 2; day < daysInMonth; day += 1) {
+            const key = toDateKey(year, month, day);
+            const prevKey = toDateKey(year, month, day - 1);
+            const nextKey = toDateKey(year, month, day + 1);
+            if (!holidays.has(key) && holidays.has(prevKey) && holidays.has(nextKey)) {
+              holidays.set(key, "休日");
+            }
+          }
+        }
+
+        return holidays;
+      }
+
+      const holidayCache = new Map();
+
+      function getJapaneseHolidayName(dateKey) {
+        const year = Number(dateKey.slice(0, 4));
+        if (!holidayCache.has(year)) {
+          holidayCache.set(year, buildJapaneseHolidays(year));
+        }
+        return holidayCache.get(year).get(dateKey) || "";
+      }
+
+      function getParts(date) {
+        return Object.fromEntries(
+          formatter
+            .formatToParts(date)
+            .filter((part) => part.type !== "literal")
+            .map((part) => [part.type, part.value])
+        );
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const parts = getParts(now);
+
+        timeEl.textContent = `${parts.hour}:${parts.minute}`;
+        secondsEl.textContent = `:${parts.second}`;
+        const dateKey = `${parts.year}-${parts.month}-${parts.day}`;
+        const holidayName = getJapaneseHolidayName(dateKey);
+        const weekdayText = `(${parts.weekday.toUpperCase()})`;
+
+        dateEl.textContent = dateKey;
+        weekdayEl.textContent = holidayName ? `${weekdayText} ${holidayName}` : weekdayText;
+        body.dataset.day = weekdayKeyFormatter.format(now).toLowerCase();
+        body.dataset.holiday = holidayName ? "true" : "false";
+        weekdayEl.title = holidayName;
+
+        const msUntilNextSecond = 1000 - (Date.now() % 1000);
+        window.setTimeout(updateClock, msUntilNextSecond + 20);
+      }
+
+      updateClock();
+    </script>
+  </body>
+</html>

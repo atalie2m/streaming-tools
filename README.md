@@ -1,10 +1,12 @@
 # streaming-tools
 
+Japanese README: [README.ja.md](README.ja.md)
+
 OBS-ready streaming widgets.
 
-## Clock widget
+## Clock Widget
 
-Open `widgets/clock/index.html` as an OBS browser source. It is a transparent-background beige clock plate designed for a browser source around `860 x 545`, but it scales to the source size.
+Open `widgets/clock/index.html` as an OBS browser source. It displays a transparent-background beige clock plate. The recommended browser source size is around `860 x 545`, but the widget scales to the source size.
 
 Example URL:
 
@@ -12,26 +14,29 @@ Example URL:
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html
 ```
 
-Useful query parameters:
+### URL Parameters
 
 | Parameter | Default | Description |
 | --- | --- | --- |
 | `tz` | `Asia/Tokyo` | IANA time zone. Example: `Asia/Tokyo`, `America/Los_Angeles`. |
-| `seconds` | `1` | Set `seconds=0` to hide seconds. |
-| `panel` |  | Override the card color with a hex value, with or without `#`. |
-| `light` |  | Override the highlight color used in the plate gradient. |
-| `shadow` |  | Override the lower edge color. |
-| `ink` |  | Override text color. |
-| `saturday` |  | Override Saturday weekday text color. |
-| `sunday` |  | Override Sunday weekday text color. |
-| `holiday` |  | Override Japanese public holiday weekday text color. |
+| `seconds` | `1` | Set `seconds=0` to hide the seconds. |
+| `margin` | `1.2` | Outer plate margin as a percentage. Use `margin=0` to make the plate fill the source bounds. |
+| `panel` |  | Override the plate color with a hex color, with or without `#`. |
+| `light` |  | Override the plate highlight color. |
+| `shadow` |  | Override the lower plate shadow color. |
+| `ink` |  | Override the text color. |
+| `saturday` |  | Override the Saturday weekday text color. |
+| `sunday` |  | Override the Sunday weekday text color. |
+| `holiday` |  | Override the Japanese public holiday weekday text color. |
 
-Examples:
+### Examples
 
 ```text
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?seconds=0
+file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?margin=0
 file:///Users/u1/Local/atalie2m/GitHub/streaming-tools/widgets/clock/index.html?panel=f1dfc4&light=fff2db&shadow=d2ad7a
 ```
 
-The weekday color switches to the holiday color on Japanese public holidays. The widget includes Cabinet Office holiday dates for 2026 and 2027, with a rule-based fallback for other years.
-# streaming-tools
+Weekday text is black on weekdays, blue on Saturdays, and red on Sundays. Japanese public holidays use the holiday color and show the holiday name after the weekday, for example `(WED) 昭和の日`.
+
+The widget includes Cabinet Office holiday and substitute holiday dates for 2026 and 2027. Other years use a rule-based fallback based on Japan's public holiday law.
